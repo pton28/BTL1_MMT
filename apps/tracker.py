@@ -1,12 +1,18 @@
 import json
 import argparse
-import sys, os
+import sys, os, requests
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from daemon.weaprous import WeApRous
 app = WeApRous()
 
 PEERS = {}
+MESSAGES = []
+CONNECTED_PEERS = {}
 
+@app.route('/', methods=['GET'])
+def index(headers, body):
+    with open("www/index.html", "r", encoding="utf-8") as f:
+        return f.read(), "text/html"
 
 # ----------------------------------------------------------
 # 1. /submit-info → Peer registration
@@ -43,12 +49,63 @@ def get_list(headers, body):
 @app.route('/connect-peer', methods=['POST'])
 def connect_peer(headers, body):
     """
-    body: {"from": {"ip":..., "port":...}, "to": {"ip":..., "port":...}}
+    body: {"from": {"ip": "127.0.0.1", "port": 8000},
+           "to": {"ip": "127.0.0.1", "port": 8001}}
     """
     data = json.loads(body)
-    print("[Tracker] Peer requesting connection:", data)
+    print(f"[Peer] connect-peer: {data}")
+
+    from_peer = data["from"]
+    to_peer = data["to"]
+    from_key = f"{from_peer['ip']}:{from_peer['port']}"
+    to_key = f"{to_peer['ip']}:{to_peer['port']}"
+
+    CONNECTED_PEERS.setdefault(from_key, [])
+    CONNECTED_PEERS.setdefault(to_key, [])
+
+    if to_peer not in CONNECTED_PEERS[from_key]:
+        CONNECTED_PEERS[from_key].append(to_peer)
+    if from_peer not in CONNECTED_PEERS[to_key]:
+        CONNECTED_PEERS[to_key].append(from_peer)
+    try:
+        requests.post(f"http://{to_peer['ip']}:{to_peer['port']}/accept-connection",
+                      json={"from": from_peer}, timeout=2)
+    except Exception as e:
+        print("[Tracker] Connect failed:", e)
+    print(f"[Tracker] Updated connections: {CONNECTED_PEERS}")
+
     return json.dumps({"status": "ok"}), "application/json"
 
+@app.route('/accept-connection', methods=['POST'])
+def accept_connection(headers, body):
+    data = json.loads(body)
+    from_peer = data["from"]
+    to_peer = None
+
+    print(f"[Peer] Accepted connection from {from_peer['ip']}:{from_peer['port']}")
+
+    for key in CONNECTED_PEERS.keys():
+        if key.endswith(str(from_peer["port"])):
+            continue 
+    target_key = f"{from_peer['ip']}:{from_peer['port']}"
+    CONNECTED_PEERS.setdefault(target_key, [])
+
+    print(f"[Tracker] Current CONNECTED_PEERS: {json.dumps(CONNECTED_PEERS, indent=2)}")
+
+    return json.dumps({"status": "ok"}), "application/json"
+
+@app.route('/get-messages', methods=['GET'])
+def get_messages(headers, body):
+    data = json.loads()
+    print(f"[Peer] Received Message from {data.get('from')}: {data.get('message')}")
+    return json.dumps({"status": "received"}), "application/json"
+
+@app.route('/get-connections', methods=['GET'])
+def get_connections(headers, body):
+    lst = list(CONNECTED_PEERS.values())
+    if not lst:
+        return json.dumps({"status": "ok", "connected_peers": CONNECTED_PEERS  }), "application/json"
+    return json.dumps({"status": "ok", "connected_peers": lst}), "application/json"
 
 # ----------------------------------------------------------
 # 4. /broadcast-peer
@@ -66,6 +123,7 @@ def broadcast_peer(headers, body):
 @app.route('/send-peer', methods=['POST'])
 def send_peer(headers, body):
     data = json.loads(body)
+    MESSAGES.append(data)
     print("[Tracker] Peer-to-peer send:", data)
     return json.dumps({"status": "ok"}), "application/json"
 
