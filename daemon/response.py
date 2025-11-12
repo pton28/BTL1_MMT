@@ -28,7 +28,7 @@ class Response():
         "reason",
     ]
 
-    def __init__(self, request=None):
+    def __init__(self, request=None, port=None):
         self._content = False
         self._content_consumed = False
         self._next = None
@@ -41,7 +41,8 @@ class Response():
         self.cookies = CaseInsensitiveDict()
         self.elapsed = datetime.timedelta(0)
         self.request = None
-        self.authenticated = False  # === ADDED ===
+        self.authenticated = False # === ADDED ===
+        self.port = port
 
     # === ADDED FOR COOKIE MANAGEMENT ===
     def create_session(self, user="guest"):
@@ -83,7 +84,8 @@ class Response():
             elif sub_type == 'html':
                 base_dir = BASE_DIR + "www/"
             else:
-                handle_text_other(sub_type)
+                # handle_text_other(sub_type)
+                base_dir = BASE_DIR + "www/"
         elif main_type == 'image':
             base_dir = os.path.join(BASE_DIR, "static/")
             self.headers['Content-Type'] = f"image/{sub_type}"
@@ -131,6 +133,10 @@ class Response():
             self.reason = "OK"
 
         # ============ FIX: SKIP AUTH CHECK IF ALREADY AUTHENTICATED ============
+        if self.port == 9000:
+            print(f"[Response] Tracker port ({self.port}) detected, skipping auth.")
+            self.authenticated = True
+
         if self.authenticated:
             print("[Response] Request already authenticated, skipping auth check")
         else:
@@ -163,7 +169,7 @@ class Response():
                     print("[Response] No Authorization found → returning 401 Unauthorized")
 
         headers = {
-            "Date": datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT"),
+            "Date": datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT"),
             "Server": "WeApRous/1.0",
             "Content-Type": rsphdr.get("Content-Type", "text/html"),
             "Content-Length": str(len(self._content) if self._content else 0),

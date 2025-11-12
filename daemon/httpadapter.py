@@ -76,7 +76,7 @@ class HttpAdapter:
         #: Request
         self.request = Request()
         #: Response
-        self.response = Response()
+        self.response = Response(port=port)
 
     def handle_client(self, conn, addr, routes):
         """
@@ -105,7 +105,7 @@ class HttpAdapter:
         req.prepare(msg, routes)
 
         # Handle request hook
-        if req.method == 'POST' and req.path == '/login':
+        if self.port != 9000 and req.method == 'POST' and req.path == '/login':
             body_params = {}
             if req.body:
                 pairs = req.body.split('&')
@@ -160,18 +160,25 @@ class HttpAdapter:
                 resp.authenticated = True  # Mark as authenticated to skip further checks
 
             # Nếu có cookie auth thì cho vào index
-            elif 'auth=true' in cookies_string:
+            elif self.port == 9000 and 'auth=true' in cookies_string:
                 if req.path == '/':
                     req.path = '/index.html'
                 resp.status_code = 200
                 resp.reason = "OK"
 
             # Còn lại thì bắt redirect về login
-            else:
+            elif self.port != 9000:
                 req.path = "/login.html"
                 resp.status_code = 302
                 resp.reason = "Redirect to login"
                 resp.headers["Location"] = "/login.html"
+            
+            elif self.port == 9000:
+                if req.path == '/':
+                    req.path = '/index.html'
+                resp.status_code = 200
+                resp.reason = "OK"
+                resp.authenticated = True
 
         # ============ FIX: HANDLE POST REQUESTS FOR API ============
         elif req.method == 'POST':
@@ -215,6 +222,10 @@ class HttpAdapter:
                 resp._content = result
                 resp.status_code = 200
 
+            header_bytes = resp.build_response_header(req)
+            conn.sendall(header_bytes + resp._content)
+            conn.close()
+            return
         # Build response
         response = resp.build_response(req)
 

@@ -1,21 +1,1158 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>bksysnet@hcmut welcome</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Chat Application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <meta charset="utf-8" />
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="css/styles.css" />
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .peer-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .peer-info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .peer-info strong {
+            color: #667eea;
+        }
+
+        .peer-list, .connected-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .peer-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .peer-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .peer-item-info {
+            font-size: 13px;
+        }
+
+        .peer-item-info .peer-address {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .peer-item-info .peer-status {
+            color: #28a745;
+            font-size: 11px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .btn-connect {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-connect:hover {
+            background: #5568d3;
+        }
+
+        .btn-connect:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* ================== SỬA ĐỔI CSS ================== */
+        /* Xóa style cũ của .connected-item */
+        .connected-item {
+            /* ... style cũ bị xóa ... */
+        }
+        .connected-item::before {
+            /* ... style cũ bị xóa ... */
+        }
+        
+        /* Style mới cho các nút bấm peer */
+        .connected-item-button {
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #155724;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .connected-item-button:hover {
+            border-color: #28a745;
+            background: #c3e6cb;
+            transform: scale(1.02);
+        }
+        /* =============================================== */
+
+
+        .channel-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .channel-tab {
+            padding: 8px 16px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .channel-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .channel-tab.joined {
+            background: #28a745;
+            color: white;
+        }
+
+        .channel-tab.joined.active {
+            background: #667eea;
+        }
+
+        .channel-tab:hover {
+            background: #764ba2;
+            color: white;
+        }
+        
+        /* ================== SỬA ĐỔI CSS ================== */
+        /* Style mới cho các tab chat 1:1 */
+        .channel-tab.p2p {
+            background: #e2f0ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+        
+        .channel-tab.p2p.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        /* =============================================== */
+
+
+        .channel-tab .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 70%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.received {
+            background: white;
+            border-left: 3px solid #667eea;
+            align-self: flex-start;
+        }
+
+        .message.sent {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .message .sender {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        .message .content {
+            font-size: 14px;
+        }
+
+        .message .time {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-area input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-send {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-send:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .config-section {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .config-section input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .btn-init {
+            width: 100%;
+            padding: 10px;
+            background: #ffc107;
+            color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .btn-init:hover {
+            background: #e0a800;
+        }
+
+        .channel-join-prompt {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .channel-join-prompt button {
+            margin-top: 15px;
+            padding: 10px 24px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .channel-join-prompt button:hover {
+            background: #218838;
+        }
+
+        /* Notification System */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .notification {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s;
+            border-left: 4px solid #667eea;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .notification.success {
+            border-left-color: #28a745;
+        }
+        
+        /* Đổi 'info' trong CSS để khớp với code (từ 'info' thành 'info') */
+        .notification.info {
+            border-left-color: #17a2b8;
+        }
+
+        .notification.warning {
+            border-left-color: #ffc107;
+        }
+        
+        .notification.error { /* Thêm error type */
+            border-left-color: #dc3545;
+        }
+
+        .notification-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .notification-message {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .notification-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-close:hover {
+            color: #333;
+        }
+    </style>
 </head>
-
 <body>
-<div>
-    <h1>bksysnet@hcmut  Domain</h1>
-    <p>This domain is for use in illustrative examples in documents.
-    </p>
-  
-       <img src="/images/welcome.png" alt="bksysnet at HCMUT" width="500" height="600">  
-</div>
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Configuration -->
+            <div class="config-section">
+                <h3>⚙️ Configuration</h3>
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                    Auto-detected from URL. Adjust if needed.
+                </p>
+                <input type="text" id="myIp" placeholder="My IP" readonly style="background: #f0f0f0;">
+                <input type="number" id="myPort" placeholder="My Port" readonly style="background: #f0f0f0;">
+                <input type="text" id="trackerIp" placeholder="Tracker IP" value="127.0.0.1">
+                <input type="number" id="trackerPort" placeholder="Tracker Port" value="9000">
+                <button class="btn-init" onclick="initializePeer()">Đăng ký</button>
+            </div>
+
+            <!-- Personal Info -->
+            <div>
+                <h2>👤 My Info</h2>
+                <div class="peer-info">
+                    <p><strong>IP:</strong> <span id="myIpDisplay">-</span></p>
+                    <p><strong>Port:</strong> <span id="myPortDisplay">-</span></p>
+                    <p><strong>Status:</strong> <span class="status-indicator"></span><span id="statusDisplay">Offline</span></p>
+                </div>
+            </div>
+
+            <!-- Online Peers -->
+            <div>
+                <h2>🌐 Online Peers</h2>
+                <div id="onlinePeersList" class="peer-list">
+                    <div class="empty-state">No peers online</div>
+                </div>
+            </div>
+
+            <!-- Connected Peers -->
+            <div>
+                <h2>✅ Connected Peers</h2>
+                <div id="connectedPeersList" class="connected-list">
+                    <div class="empty-state">Not connected to any peer</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <h2>💬 Chat Application</h2>
+
+            <!-- Channel Tabs -->
+            <div class="channel-tabs" id="channelTabs">
+                <button class="channel-tab active" data-channel="broadcast" onclick="switchChannel('broadcast')">
+                    📢 Broadcast
+                    <span class="badge" id="badge-broadcast" style="display:none">0</span>
+                </button>
+                <button class="channel-tab" data-channel="a" onclick="switchChannel('a')">
+                    # Channel A
+                    <span class="badge" id="badge-a" style="display:none">0</span>
+                </button>
+                <button class="channel-tab" data-channel="b" onclick="switchChannel('b')">
+                    # Channel B
+                    <span class="badge" id="badge-b" style="display:none">0</span>
+                </button>
+                <button class="channel-tab" data-channel="c" onclick="switchChannel('c')">
+                    # Channel C
+                    <span class="badge" id="badge-c" style="display:none">0</span>
+                </button>
+                <button class="channel-tab" data-channel="d" onclick="switchChannel('d')">
+                    # Channel D
+                    <span class="badge" id="badge-d" style="display:none">0</span>
+                </button>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="chat-area">
+                <div class="messages" id="messagesArea">
+                    <div class="empty-state">No messages yet. Start chatting!</div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area">
+                    <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                    <button class="btn-send" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ========== Global state ==========
+    let myIp = '';
+    let myPort = 0;
+    let trackerIp = '';
+    let trackerPort = 0;
+    let initialized = false;
+
+    let onlinePeers = [];
+    let connectedPeers = new Set();
+    
+    // Biến lưu kênh chat hiện tại
+    let currentChannel = 'broadcast';
+    
+    // Biến lưu tin nhắn
+    // (Trong ứng dụng thực tế, bạn nên lưu theo từng kênh)
+    let messages = {};
+
+
+    // ========== On page load ==========
+    
+    // ==========================================================
+    // SỬA LỖI 1: NÂNG CẤP HÀM `showNotification`
+    // Thay thế `alert()` bằng hệ thống "toast" đã có trong HTML
+    // ==========================================================
+    function showNotification(title, message, type = 'info') {
+        const container = document.getElementById('notificationContainer');
+        if (!container) {
+            console.warn("Notification container not found!");
+            // Fallback về alert nếu không tìm thấy container
+            alert(`${title}: ${message}`);
+            return;
+        }
+
+        let icon = 'ℹ️'; // info
+        if (type === 'success') icon = '✅';
+        if (type === 'warning') icon = '⚠️';
+        if (type === 'error') icon = '❌'; // Dùng 'error' cho nhất quán
+
+        const notif = document.createElement('div');
+        notif.className = `notification ${type}`; // 'info', 'success', 'warning', 'error'
+
+        notif.innerHTML = `
+            <div class="notification-icon">${icon}</div>
+            <div class="notification-content">
+                <div class="notification-title">${title}</div>
+                <div class="notification-message">${message}</div>
+            </div>
+            <button class="notification-close" onclick="this.parentElement.remove()" style="background:none; border:none; font-size: 20px; cursor:pointer; color: #999;">&times;</button>
+        `;
+
+        container.appendChild(notif);
+
+        // Tự động xóa sau 5 giây (giống animation trong CSS)
+        setTimeout(() => {
+            if (notif.parentNode === container) {
+                // Thêm animation mờ dần nếu muốn
+                notif.style.animation = "fadeOut 0.3s ease forwards";
+                setTimeout(() => notif.remove(), 300);
+            }
+        }, 5000); // 5 giây
+    }
+    
+    window.addEventListener('DOMContentLoaded', () => {
+        autoDetectConfig();
+        
+        // ==========================================================
+        // SỬA LỖI 2: LOGIC TẢI TRANG
+        // Chỉ khôi phục (restore) nếu là 'reload', không phải 'navigate'
+        // ==========================================================
+        
+        // Lấy (các) mục nhập điều hướng
+        const navEntries = performance.getEntriesByType("navigation");
+        
+        // Lấy loại điều hướng (ví dụ: 'navigate', 'reload', 'back_forward')
+        const navType = navEntries.length > 0 ? navEntries[0].type : '';
+
+        // Chỉ khôi phục trạng thái NẾU đây là một 'reload' (F5 / Tải lại)
+        if (navType === 'reload') {
+            console.log("Navigation type: RELOAD. Restoring state.");
+            restorePeerState(); // Tải từ localStorage
+        } else {
+            console.log("Navigation type: NAVIGATE (or other). Starting fresh.");
+            // Không làm gì cả, để cho người dùng tự initialize
+            // (Xóa trạng thái cũ nếu có, để đảm bảo sạch)
+            localStorage.removeItem('peerState');
+        }
+    });
+
+    function autoDetectConfig() {
+        const hostname = window.location.hostname;
+        const port = window.location.port;
+        myIp = hostname;
+        myPort = parseInt(port) || 80;
+        document.getElementById('myIp').value = myIp;
+        document.getElementById('myPort').value = myPort;
+        document.getElementById('trackerIp').value = myIp;
+    }
+
+    // ========== LocalStorage Handling ==========
+    function savePeerState() {
+        const state = { 
+            myIp, 
+            myPort, 
+            trackerIp, 
+            trackerPort, 
+            initialized,
+            connectedPeers: Array.from(connectedPeers) };
+        localStorage.setItem('peerState', JSON.stringify(state));
+    }
+
+    function restorePeerState() {
+        const state = JSON.parse(localStorage.getItem('peerState') || 'null');
+        if (state && state.initialized) {
+            myIp = state.myIp;
+            myPort = state.myPort;
+            trackerIp = state.trackerIp;
+            trackerPort = state.trackerPort;
+            initialized = true;
+
+            // 🔧 Cập nhật lại input cho form
+            document.getElementById('myIp').value = myIp;
+            document.getElementById('myPort').value = myPort;
+            document.getElementById('trackerIp').value = trackerIp;
+            document.getElementById('trackerPort').value = trackerPort;
+            connectedPeers = new Set(state.connectedPeers || []);
+
+            updateUiAfterInit();
+
+            // await syncWithTracker();
+            updateOnlinePeersList();
+            updateConnectedPeersList();
+
+            showNotification('Restored', `Peer ${myIp}:${myPort} restored from local storage`, 'info');
+            startSyncLoop();
+        }
+    }
+
+    // ========== Initialize Peer ==========
+    async function initializePeer() {
+        if (initialized) {
+            showNotification('Already initialized', 'Peer already registered.', 'info');
+            return;
+        }
+
+        myIp = document.getElementById('myIp').value;
+        myPort = parseInt(document.getElementById('myPort').value);
+        trackerIp = document.getElementById('trackerIp').value;
+        trackerPort = parseInt(document.getElementById('trackerPort').value);
+
+        if (!myIp || !myPort || !trackerIp || !trackerPort) {
+            showNotification('Error', 'Please fill all configuration fields', 'warning');
+            return;
+        }
+
+        try {
+            await registerToTracker();
+            initialized = true;
+            savePeerState(); // Lưu trạng thái sau khi init thành công
+            updateUiAfterInit();
+            showNotification('Initialized', `Peer ${myIp}:${myPort} registered to tracker!`, 'success');
+            startSyncLoop();
+        } catch (err) {
+            showNotification('Error', 'Failed to initialize: ' + err.message, 'error'); // Dùng 'error'
+        }
+    }
+
+    function updateUiAfterInit() {
+        document.getElementById('myIpDisplay').textContent = myIp;
+        document.getElementById('myPortDisplay').textContent = myPort;
+        document.getElementById('statusDisplay').textContent = 'Online';
+        document.querySelector('.btn-init').disabled = true;
+    }
+
+    async function registerToTracker() {
+        const url = `http://${trackerIp}:${trackerPort}/submit-info`;
+        const body = JSON.stringify({ ip: myIp, port: myPort });
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body
+        });
+        if (!res.ok) {
+            throw new Error(`Tracker returned ${res.status}`);
+        }
+        return res.json();
+    }
+
+    // ========== Tracker Sync ==========
+    
+    // ================== SỬA ĐỔI JAVASCRIPT ==================
+    async function startSyncLoop() {
+        // Thay đổi: Gộp getPeerList và getConnectionsList vào một hàm
+        setInterval(syncWithTracker, 5000); // 5 giây
+        syncWithTracker(); // Chạy lần đầu
+    }
+
+    /**
+     * HÀM MỚI: Đồng bộ hóa cả danh sách peer và danh sách kết nối
+     */
+    async function syncWithTracker() {
+        if (!initialized) return;
+        try {
+            // Chạy cả hai yêu cầu song song
+            await Promise.all([
+                getPeerList(),
+                getConnectionsList()
+            ]);
+        } catch (err) {
+            console.error("Sync error:", err);
+            showNotification('Sync Error', 'Could not sync with tracker', 'warning');
+        }
+        
+        // Chỉ cập nhật UI sau khi cả hai đã hoàn tất
+        updateOnlinePeersList();
+        updateConnectedPeersList();
+    }
+    
+    /**
+     * HÀM MỚI: Lấy danh sách kết nối từ Tracker
+     * (Giải quyết vấn đề Peer B không tự cập nhật)
+     */
+    async function getConnectionsList() {
+        const res = await fetch(`http://${trackerIp}:${trackerPort}/get-connections`);
+        if (!res.ok) throw new Error("Failed to get connections");
+        
+        const data = await res.json();
+        const connections = data.connected_peers || {};
+        
+        const myKey = `${myIp}:${myPort}`;
+        const newConnectedPeers = new Set();
+        
+        // 1. Lấy những người MÀ TÔI đã kết nối
+        (connections[myKey] || []).forEach(peer => {
+            newConnectedPeers.add(`${peer.ip}:${peer.port}`);
+        });
+        
+        // 2. Lấy những người ĐÃ KẾT NỐI VỚI TÔI (Giải quyết vấn đề của Peer B)
+        for (const peerKey in connections) {
+            if (peerKey === myKey) continue;
+            const connectedToThem = connections[peerKey] || [];
+            // Nếu peerKey (vd: Peer A) có kết nối đến tôi (Peer B)
+            if (connectedToThem.some(p => p.ip === myIp && p.port === myPort)) {
+                newConnectedPeers.add(peerKey);
+            }
+        }
+        
+        // Cập nhật state (chỉ khi có thay đổi)
+        if (newConnectedPeers.size !== connectedPeers.size || !([...newConnectedPeers].every(p => connectedPeers.has(p)))) {
+            connectedPeers = newConnectedPeers;
+        }
+    }
+
+    /**
+     * Cập nhật hàm getPeerList (bỏ gọi update UI)
+     */
+    async function getPeerList() {
+        // if (!initialized) return; // Đã check trong syncWithTracker
+        try {
+            const res = await fetch(`http://${trackerIp}:${trackerPort}/get-list`);
+            const data = await res.json();
+            onlinePeers = data.peers || [];
+            // updateOnlinePeersList(); // Bỏ: syncWithTracker sẽ gọi
+        } catch (err) {
+            console.error(err);
+            // Có thể hiển thị thông báo lỗi
+            // showNotification('Sync Error', 'Could not fetch peer list', 'warning');
+        }
+    }
+    // ========================================================
+
+
+    // ========== UI Rendering ==========
+    function updateOnlinePeersList() {
+        const list = document.getElementById('onlinePeersList');
+        if (onlinePeers.length === 0) {
+            list.innerHTML = '<div class="empty-state">No peers online</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        onlinePeers.forEach(peer => {
+            const key = `${peer.ip}:${peer.port}`;
+            const isMe = (peer.port === myPort && peer.ip === myIp); // Kiểm tra cả IP và Port
+            const isConnected = connectedPeers.has(key);
+
+            const item = document.createElement('div');
+            item.className = 'peer-item';
+            item.innerHTML = `
+                <div class="peer-item-info">
+                    <div class="peer-address">${key} ${isMe ? '<strong>(You)</strong>' : ''}</div>
+                    <div class="peer-status">${isMe ? '🟢 Online' : '🟢 Available'}</div>
+                </div>
+                <button class="btn btn-connect"
+                    ${isMe || isConnected ? 'disabled' : ''}
+                    onclick="connectToPeer('${peer.ip}', ${peer.port})">
+                    ${isMe ? 'Me' : isConnected ? 'Connected' : 'Connect'}
+                </button>`;
+            list.appendChild(item);
+        });
+    }
+
+    // ========== Connection Logic ==========
+    async function connectToPeer(ip, port) {
+        const key = `${ip}:${port}`;
+        if (connectedPeers.has(key)) return;
+
+        try {
+            // 1️⃣ Gửi yêu cầu đến tracker (tùy chọn, chỉ để log)
+            await fetch(`http://${trackerIp}:${trackerPort}/connect-peer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    from: { ip: myIp, port: myPort },
+                    to: { ip, port }
+                })
+            });
+
+            // 2️⃣ Gửi yêu cầu trực tiếp đến peer B
+            await fetch(`http://${ip}:${port}/accept-connection`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ from: { ip: myIp, port: myPort } })
+            });
+
+            // 3️⃣ Cập nhật UI
+            connectedPeers.add(key);
+            savePeerState();
+            updateOnlinePeersList();
+            updateConnectedPeersList();
+            showNotification('Connected', `Connected to ${key}`, 'success');
+            
+            // 4️⃣ TỰ ĐỘNG TẠO VÀ CHUYỂN SANG KÊNH 1:1
+            createOrSwitchToP2PChannel(key, ip, port);
+            
+        } catch (err) {
+            showNotification('Error', 'Failed to connect: ' + err.message, 'error'); // Dùng 'error'
+        }
+    }
+
+    // ================== SỬA ĐỔI JAVASCRIPT ==================
+    /**
+     * Cập nhật hàm updateConnectedPeersList
+     * (Biến danh sách thành các nút bấm)
+     */
+    function updateConnectedPeersList() {
+        const list = document.getElementById('connectedPeersList');
+        if (connectedPeers.size === 0) {
+            list.innerHTML = '<div class="empty-state">Not connected to any peer</div>';
+            return;
+        }
+        list.innerHTML = '';
+        Array.from(connectedPeers).forEach(key => { 
+            const [ip, port] = key.split(':');
+            
+            const button = document.createElement('button');
+            button.className = 'connected-item-button'; // Class CSS mới
+            button.innerHTML = `💬 ${key}`; // Thêm icon chat
+            // Gán sự kiện click để mở kênh 1:1
+            button.onclick = () => createOrSwitchToP2PChannel(key, ip, port);
+            
+            list.appendChild(button);
+        });
+    }
+    // ========================================================
+
+
+    // ========== Chat Logic (Placeholder) ==========
+    
+    // ================== SỬA ĐỔI JAVASCRIPT ==================
+    /**
+     * HÀM MỚI: Tạo và chuyển sang kênh 1:1
+     */
+    function createOrSwitchToP2PChannel(key, ip, port) {
+        const channelId = `p2p_${key}`; // ID duy nhất, vd: p2p_127.0.0.1:8000
+        const tabsContainer = document.getElementById('channelTabs');
+        
+        let p2pTab = document.querySelector(`.channel-tab[data-channel="${channelId}"]`);
+        
+        if (!p2pTab) {
+            // Tạo tab mới nếu chưa có
+            p2pTab = document.createElement('button');
+            p2pTab.className = 'channel-tab p2p'; // Class mới cho P2P
+            p2pTab.dataset.channel = channelId;
+            p2pTab.textContent = `👤 ${key}`; // Icon 1:1
+            p2pTab.onclick = () => switchChannel(channelId);
+            
+            // Thêm vào cuối danh sách tab
+            tabsContainer.appendChild(p2pTab);
+        }
+        
+        // Tự động chuyển sang tab này
+        // (Hàm switchChannel sẽ tự bỏ active ở 'broadcast')
+        switchChannel(channelId);
+    }
+    // ========================================================
+
+
+    function switchChannel(channelId) {
+        // Bỏ active ở tab cũ
+        document.querySelector('.channel-tab.active')?.classList.remove('active');
+        
+        // Active tab mới
+        const newTab = document.querySelector(`.channel-tab[data-channel="${channelId}"]`);
+        newTab?.classList.add('active');
+        
+        // Xóa badge (nếu có)
+        const badge = document.getElementById(`badge-${channelId}`);
+        if(badge) {
+            badge.style.display = 'none';
+            badge.textContent = '0';
+        }
+
+        currentChannel = channelId;
+        renderMessages(currentChannel);
+        
+        // (Logic tham gia kênh nếu chưa tham gia)
+    }
+    
+    function renderMessages(channelId) {
+        const messagesArea = document.getElementById('messagesArea');
+        messagesArea.innerHTML = ''; // Xóa tin nhắn cũ
+        
+        const channelMessages = messages[channelId] || [];
+        
+        if (channelMessages.length === 0) {
+            messagesArea.innerHTML = '<div class="empty-state">No messages in this channel yet.</div>';
+            return;
+        }
+        
+        channelMessages.forEach(msg => {
+            appendMessage(msg.sender, msg.content, msg.type, msg.time);
+        });
+    }
+    
+    function appendMessage(sender, content, type, timeStr) {
+        const messagesArea = document.getElementById('messagesArea');
+        
+        // Xóa empty state nếu là tin nhắn đầu tiên
+        const emptyState = messagesArea.querySelector('.empty-state');
+        if (emptyState) emptyState.remove();
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${type}`; // 'sent' hoặc 'received'
+        
+        const time = timeStr || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+        msgDiv.innerHTML = `
+            <div class="sender">${sender}</div>
+            <div class="content">${content}</div>
+            <div class="time">${time}</div>
+        `;
+        messagesArea.appendChild(msgDiv);
+        
+        // Cuộn xuống tin nhắn mới nhất
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    function sendMessage() {
+        if (!initialized) {
+            showNotification('Error', 'Please initialize the peer first.', 'warning');
+            return;
+        }
+        
+        const input = document.getElementById('messageInput');
+        const messageContent = input.value.trim();
+        
+        if (messageContent === '') return;
+        
+        const senderId = `${myIp}:${myPort}`;
+        const messageData = {
+            sender: senderId,
+            content: messageContent,
+            type: 'sent', // Đây là tin nhắn 'gửi'
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        // 1. Thêm vào UI
+        appendMessage(senderId + " (You)", messageContent, 'sent', messageData.time);
+        
+        // 2. Lưu vào CSDL local
+        if (!messages[currentChannel]) {
+            messages[currentChannel] = [];
+        }
+        messages[currentChannel].push(messageData);
+        
+        // 3. Gửi broadcast (hoặc P2P)
+        broadcastMessage(currentChannel, messageContent);
+
+        input.value = ''; // Xóa input
+    }
+    
+    async function broadcastMessage(channel, messageContent) {
+        // (Trong ứng dụng thực tế, bạn sẽ gửi đến tất cả 'connectedPeers')
+        console.log(`Broadcasting to ${channel}: ${messageContent}`);
+        
+        // Ví dụ gửi qua tracker (nếu tracker hỗ trợ)
+        // await fetch(`http://${trackerIp}:${trackerPort}/broadcast-peer`, {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({
+        //         from: { ip: myIp, port: myPort },
+        //         channel: channel,
+        //         message: messageContent
+        //     })
+        // });
+        
+        // Hoặc gửi trực tiếp đến từng peer
+        connectedPeers.forEach(peerKey => {
+            const [ip, port] = peerKey.split(':');
+            sendDirectMessage(ip, port, channel, messageContent);
+        });
+    }
+
+    async function sendDirectMessage(ip, port, channel, messageContent) {
+        try {
+            await fetch(`http://${ip}:${port}/receive-message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    from: `${myIp}:${myPort}`,
+                    channel: channel,
+                    message: messageContent
+                })
+            });
+        } catch (err) {
+            console.error(`Failed to send message to ${ip}:${port}`, err);
+            showNotification('Send Error', `Could not send message to ${ip}:${port}`, 'error');
+        }
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+    
+    // (Bạn cần thêm một route trên Peer server để nhận tin nhắn, 
+    // ví dụ /receive-message, và sau đó gọi 'appendMessage' với type 'received')
+
+</script>
+
 </body>
 </html>
